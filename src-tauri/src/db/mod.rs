@@ -38,6 +38,7 @@ impl DbState {
                 title TEXT NOT NULL,
                 price_cents INTEGER NOT NULL,
                 category TEXT NOT NULL DEFAULT '',
+                color TEXT NOT NULL DEFAULT '',
                 sort_order INTEGER NOT NULL
             );
 
@@ -47,27 +48,48 @@ impl DbState {
             );
             ",
         )?;
+
+        let mut has_color_column = false;
+        let mut columns = conn.prepare("PRAGMA table_info(services)")?;
+        let column_names = columns.query_map([], |row| row.get::<_, String>(1))?;
+        for name in column_names {
+            if name? == "color" {
+                has_color_column = true;
+                break;
+            }
+        }
+
+        if !has_color_column {
+            conn.execute(
+                "ALTER TABLE services ADD COLUMN color TEXT NOT NULL DEFAULT ''",
+                [],
+            )?;
+        }
+
         Ok(())
+    }
+
+    fn map_service(row: &rusqlite::Row<'_>) -> rusqlite::Result<Service> {
+        Ok(Service {
+            id: row.get(0)?,
+            title: row.get(1)?,
+            price_cents: row.get(2)?,
+            category: row.get(3)?,
+            color: row.get(4)?,
+            sort_order: row.get(5)?,
+        })
     }
 
     pub fn list_services(&self) -> Result<Vec<Service>, DbError> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, title, price_cents, category, sort_order
+            "SELECT id, title, price_cents, category, color, sort_order
              FROM services
              ORDER BY sort_order ASC, id ASC",
         )?;
 
         let services = stmt
-            .query_map([], |row| {
-                Ok(Service {
-                    id: row.get(0)?,
-                    title: row.get(1)?,
-                    price_cents: row.get(2)?,
-                    category: row.get(3)?,
-                    sort_order: row.get(4)?,
-                })
-            })?
+            .query_map([], Self::map_service)?
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(services)
@@ -78,6 +100,7 @@ impl DbState {
         title: &str,
         price_cents: i64,
         category: &str,
+        color: &str,
     ) -> Result<Service, DbError> {
         let conn = self.conn.lock().unwrap();
         let sort_order: i64 = conn.query_row(
@@ -87,9 +110,9 @@ impl DbState {
         )?;
 
         conn.execute(
-            "INSERT INTO services (title, price_cents, category, sort_order)
-             VALUES (?1, ?2, ?3, ?4)",
-            params![title, price_cents, category, sort_order],
+            "INSERT INTO services (title, price_cents, category, color, sort_order)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![title, price_cents, category, color, sort_order],
         )?;
 
         let id = conn.last_insert_rowid();
@@ -98,6 +121,7 @@ impl DbState {
             title: title.to_string(),
             price_cents,
             category: category.to_string(),
+            color: color.to_string(),
             sort_order,
         })
     }
@@ -108,11 +132,14 @@ impl DbState {
         title: &str,
         price_cents: i64,
         category: &str,
+        color: &str,
     ) -> Result<Service, DbError> {
         let conn = self.conn.lock().unwrap();
         let rows = conn.execute(
-            "UPDATE services SET title = ?1, price_cents = ?2, category = ?3 WHERE id = ?4",
-            params![title, price_cents, category, id],
+            "UPDATE services
+             SET title = ?1, price_cents = ?2, category = ?3, color = ?4
+             WHERE id = ?5",
+            params![title, price_cents, category, color, id],
         )?;
 
         if rows == 0 {
@@ -120,17 +147,10 @@ impl DbState {
         }
 
         let service = conn.query_row(
-            "SELECT id, title, price_cents, category, sort_order FROM services WHERE id = ?1",
+            "SELECT id, title, price_cents, category, color, sort_order
+             FROM services WHERE id = ?1",
             params![id],
-            |row| {
-                Ok(Service {
-                    id: row.get(0)?,
-                    title: row.get(1)?,
-                    price_cents: row.get(2)?,
-                    category: row.get(3)?,
-                    sort_order: row.get(4)?,
-                })
-            },
+            Self::map_service,
         )?;
 
         Ok(service)

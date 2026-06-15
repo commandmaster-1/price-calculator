@@ -7,10 +7,7 @@ function categoryLabel(category: string): string {
   return category.trim() || UNCATEGORIZED_LABEL;
 }
 
-export function formatServicesText(
-  services: Service[],
-  selectedIds: number[],
-): string {
+function buildServiceGroups(services: Service[], selectedIds: number[]) {
   const serviceMap = new Map(services.map((service) => [service.id, service]));
   const categoryOrder: string[] = [];
   const grouped = new Map<string, Service[]>();
@@ -27,10 +24,36 @@ export function formatServicesText(
     grouped.get(label)!.push(service);
   }
 
+  return { categoryOrder, grouped };
+}
+
+export function formatServicesText(
+  services: Service[],
+  selectedIds: number[],
+): string {
+  const { categoryOrder, grouped } = buildServiceGroups(services, selectedIds);
+
   return categoryOrder
     .map((label) => {
       const titles = grouped.get(label)!.map((service) => service.title).join(", ");
       return `${label}: ${titles}`;
+    })
+    .join(", ");
+}
+
+export function formatServicesHtml(
+  services: Service[],
+  selectedIds: number[],
+): string {
+  const { categoryOrder, grouped } = buildServiceGroups(services, selectedIds);
+
+  return categoryOrder
+    .map((label) => {
+      const titles = grouped
+        .get(label)!
+        .map((service) => escapeHtml(service.title))
+        .join(", ");
+      return `<strong>${escapeHtml(label)}:</strong> ${titles}`;
     })
     .join(", ");
 }
@@ -65,11 +88,11 @@ export function generateText(
   services: Service[],
   selectedIds: number[],
 ): { html: string; plainText: string } {
-  const servicesText = formatServicesText(services, selectedIds);
+  const servicesHtml = formatServicesHtml(services, selectedIds);
   const priceText = formatPrice(calculateTotalCents(services, selectedIds));
 
   const html = templateHtml
-    .replaceAll("{services}", escapeHtml(servicesText))
+    .replaceAll("{services}", servicesHtml)
     .replaceAll("{price}", escapeHtml(priceText));
 
   const plainText = htmlToPlainText(html);

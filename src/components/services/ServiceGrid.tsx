@@ -36,10 +36,11 @@ interface ServiceGridProps {
     title: string;
     price_cents: number;
     category: string;
+    color: string;
   }) => Promise<void>;
   onUpdate: (
     id: number,
-    values: { title: string; price_cents: number; category: string },
+    values: { title: string; price_cents: number; category: string; color: string },
   ) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
   onReorder: (orderedIds: number[]) => Promise<void>;

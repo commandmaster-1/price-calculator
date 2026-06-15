@@ -32,3 +32,11 @@ export function getTemplate(): Promise<string> {
 export function saveTemplate(html: string): Promise<void> {
   return invoke<void>("save_template", { html });
 }
+
+export function getColorPresets(): Promise<string[]> {
+  return invoke<string[]>("get_color_presets");
+}
+
+export function saveColorPresets(presets: string[]): Promise<void> {
+  return invoke<void>("save_color_presets", { presets });
+}

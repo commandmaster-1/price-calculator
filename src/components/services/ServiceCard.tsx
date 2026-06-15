@@ -3,6 +3,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { getContrastTextClass, normalizeHexColor } from "@/lib/color-utils";
 import { cn } from "@/lib/utils";
 import type { Service } from "@/types/service";
 
@@ -35,9 +36,12 @@ export function ServiceCard({
     disabled: !editMode,
   });
 
+  const cardColor = normalizeHexColor(service.color);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    backgroundColor: cardColor ?? undefined,
   };
 
   return (
@@ -45,11 +49,11 @@ export function ServiceCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative transition-colors",
-        !editMode && "cursor-pointer hover:bg-accent/40",
-        selected &&
-          !editMode &&
-          "border-green-500 bg-green-50 ring-2 ring-green-500/40 dark:bg-green-950/40",
+        "relative transition-[filter,border-color,box-shadow]",
+        !cardColor && "bg-card",
+        !editMode && "cursor-pointer hover:brightness-95",
+        selected && !editMode && "border-4 border-green-500 shadow-sm",
+        !selected && "border",
         isDragging && "opacity-60",
       )}
       onClick={() => {
@@ -58,11 +62,11 @@ export function ServiceCard({
         }
       }}
     >
-      <CardContent className="flex items-center gap-1.5 px-2.5 py-1.5">
+      <CardContent className="flex items-start gap-1.5 px-2.5 py-1.5">
         {editMode ? (
           <button
             type="button"
-            className="cursor-grab text-muted-foreground active:cursor-grabbing"
+            className="mt-0.5 cursor-grab text-muted-foreground active:cursor-grabbing"
             aria-label="Verschieben"
             {...attributes}
             {...listeners}
@@ -70,11 +74,16 @@ export function ServiceCard({
             <GripVertical className="size-3.5" />
           </button>
         ) : null}
-        <p className="min-w-0 flex-1 text-xs font-medium leading-tight">
+        <p
+          className={cn(
+            "min-w-0 flex-1 text-center text-xs font-medium leading-tight break-words whitespace-normal",
+            cardColor ? getContrastTextClass(cardColor) : "text-foreground",
+          )}
+        >
           {service.title}
         </p>
         {editMode ? (
-          <div className="flex items-center gap-0.5">
+          <div className="flex shrink-0 items-center gap-0.5">
             <Button
               type="button"
               variant="ghost"

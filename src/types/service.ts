@@ -3,6 +3,7 @@ export interface Service {
   title: string;
   price_cents: number;
   category: string;
+  color: string;
   sort_order: number;
 }
 
@@ -10,6 +11,7 @@ export interface CreateServiceInput {
   title: string;
   price_cents: number;
   category: string;
+  color: string;
 }
 
 export interface UpdateServiceInput extends CreateServiceInput {

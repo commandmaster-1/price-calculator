@@ -6,6 +6,7 @@ pub struct Service {
     pub title: String,
     pub price_cents: i64,
     pub category: String,
+    pub color: String,
     pub sort_order: i64,
 }
 
@@ -14,6 +15,7 @@ pub struct CreateServiceInput {
     pub title: String,
     pub price_cents: i64,
     pub category: String,
+    pub color: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -22,4 +24,5 @@ pub struct UpdateServiceInput {
     pub title: String,
     pub price_cents: i64,
     pub category: String,
+    pub color: String,
 }

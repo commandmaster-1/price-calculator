@@ -1,5 +1,6 @@
 import { useEffect, useState, type SubmitEvent } from "react";
 import { Button } from "@/components/ui/button";
+import { ColorPickerField } from "@/components/services/ColorPickerField";
 import {
   Dialog,
   DialogContent,
@@ -9,8 +10,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { formatPriceInput, parsePriceInput } from "@/lib/format-price";
+import { DEFAULT_COLOR_PRESETS } from "@/lib/color-utils";
+import { useColorPresets } from "@/hooks/useColorPresets";
 import type { Service } from "@/types/service";
-import {Field, FieldGroup, FieldLabel} from "@/components/ui/field.tsx";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field.tsx";
 
 interface ServiceDialogProps {
   open: boolean;
@@ -20,6 +23,7 @@ interface ServiceDialogProps {
     title: string;
     price_cents: number;
     category: string;
+    color: string;
   }) => Promise<void>;
 }
 
@@ -29,9 +33,11 @@ export function ServiceDialog({
   service,
   onSubmit,
 }: ServiceDialogProps) {
+  const { presets, loading: presetsLoading, updatePreset } = useColorPresets();
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
+  const [color, setColor] = useState<string>(DEFAULT_COLOR_PRESETS[0]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,6 +46,7 @@ export function ServiceDialog({
       setTitle(service?.title ?? "");
       setPrice(service ? formatPriceInput(service.price_cents) : "");
       setCategory(service?.category ?? "");
+      setColor(service?.color || DEFAULT_COLOR_PRESETS[0]);
       setError(null);
     }
   }, [open, service]);
@@ -66,6 +73,7 @@ export function ServiceDialog({
         title: title.trim(),
         price_cents: priceCents,
         category: category.trim(),
+        color,
       });
       onOpenChange(false);
     } catch (submitError) {
@@ -77,7 +85,7 @@ export function ServiceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {service ? "Dienstleistung bearbeiten" : "Neue Dienstleistung"}
@@ -88,31 +96,41 @@ export function ServiceDialog({
             <Field>
               <FieldLabel>Titel</FieldLabel>
               <Input
-                  id="service-title"
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  placeholder="z. B. Beratung"
+                id="service-title"
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                placeholder="z. B. Beratung"
               />
             </Field>
             <Field>
               <FieldLabel>Preis (€)</FieldLabel>
               <Input
-                  id="service-price"
-                  value={price}
-                  onChange={(event) => setPrice(event.target.value)}
-                  placeholder="z. B. 1,30"
+                id="service-price"
+                value={price}
+                onChange={(event) => setPrice(event.target.value)}
+                placeholder="z. B. 1,30"
               />
             </Field>
             <Field>
               <FieldLabel>Kategorie</FieldLabel>
               <Input
-                  id="service-category"
-                  value={category}
-                  onChange={(event) => setCategory(event.target.value)}
-                  placeholder="Optional, z. B. Planung"
+                id="service-category"
+                value={category}
+                onChange={(event) => setCategory(event.target.value)}
+                placeholder="Optional, z. B. Planung"
               />
             </Field>
           </FieldGroup>
+          {presetsLoading ? (
+            <p className="text-sm text-muted-foreground">Lade Farb-Presets…</p>
+          ) : (
+            <ColorPickerField
+              color={color}
+              presets={presets}
+              onColorChange={setColor}
+              onPresetSave={updatePreset}
+            />
+          )}
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           <DialogFooter>
             <Button

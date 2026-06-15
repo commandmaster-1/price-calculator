@@ -7,7 +7,9 @@ use tauri::Manager;
 use commands::services::{
     create_service, delete_service, list_services, reorder_services, update_service,
 };
-use commands::settings::{get_template, save_template};
+use commands::settings::{
+    get_color_presets, get_template, save_color_presets, save_template,
+};
 use db::DbState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -33,6 +35,8 @@ pub fn run() {
             reorder_services,
             get_template,
             save_template,
+            get_color_presets,
+            save_color_presets,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
