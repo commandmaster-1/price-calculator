@@ -97,10 +97,10 @@ export function ServiceDialog({
             <Field>
               <FieldLabel>Preis (€)</FieldLabel>
               <Input
-                  id="service-title"
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  placeholder="z. B. Beratung"
+                  id="service-price"
+                  value={price}
+                  onChange={(event) => setPrice(event.target.value)}
+                  placeholder="z. B. 1,30"
               />
             </Field>
             <Field>

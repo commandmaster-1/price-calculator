@@ -10,7 +10,8 @@ import {
   SortableContext,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,8 +31,6 @@ interface ServiceGridProps {
   services: Service[];
   editMode: boolean;
   selectedIds: number[];
-  createDialogOpen?: boolean;
-  onCreateDialogOpenChange?: (open: boolean) => void;
   onToggleSelect: (id: number) => void;
   onCreate: (values: {
     title: string;
@@ -50,26 +49,26 @@ export function ServiceGrid({
   services,
   editMode,
   selectedIds,
-  createDialogOpen,
-  onCreateDialogOpenChange,
   onToggleSelect,
   onCreate,
   onUpdate,
   onDelete,
   onReorder,
 }: ServiceGridProps) {
-  const [internalDialogOpen, setInternalDialogOpen] = useState(false);
-  const dialogOpen = createDialogOpen ?? internalDialogOpen;
-  const setDialogOpen = onCreateDialogOpenChange ?? setInternalDialogOpen;
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Service | null>(null);
-
-  useEffect(() => {
-    if (createDialogOpen) {
-      setEditingService(null);
-    }
-  }, [createDialogOpen]);
   const [deleting, setDeleting] = useState(false);
+
+  function openCreateDialog() {
+    setEditingService(null);
+    setDialogOpen(true);
+  }
+
+  function openEditDialog(service: Service) {
+    setEditingService(service);
+    setDialogOpen(true);
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -116,6 +115,14 @@ export function ServiceGrid({
 
   return (
     <>
+      {editMode ? (
+        <div className="mb-2 flex justify-end">
+          <Button onClick={openCreateDialog} size="sm">
+            <Plus className="size-4" />
+            Neu
+          </Button>
+        </div>
+      ) : null}
       <ScrollArea className="h-full min-h-0">
         <DndContext
           sensors={sensors}
@@ -134,10 +141,7 @@ export function ServiceGrid({
                   editMode={editMode}
                   selected={selectedIds.includes(service.id)}
                   onToggleSelect={() => onToggleSelect(service.id)}
-                  onEdit={() => {
-                    setEditingService(service);
-                    setDialogOpen(true);
-                  }}
+                  onEdit={() => openEditDialog(service)}
                   onDelete={() => setDeleteTarget(service)}
                 />
               ))}

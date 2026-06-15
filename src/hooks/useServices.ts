@@ -34,7 +34,7 @@ export function useServices() {
     async (input: CreateServiceInput) => {
       const created = await createService(input);
       setServices((current) => [...current, created]);
-      toast.success("Dienstleistung erstellt.");
+      toast.success("Dienstleistung erstellt.", {duration: 1200});
       return created;
     },
     [],
@@ -45,7 +45,7 @@ export function useServices() {
     setServices((current) =>
       current.map((service) => (service.id === updated.id ? updated : service)),
     );
-    toast.success("Dienstleistung aktualisiert.");
+    toast.success("Dienstleistung aktualisiert.", {duration: 1200});
     return updated;
   }, []);
 

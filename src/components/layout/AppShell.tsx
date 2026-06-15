@@ -1,5 +1,5 @@
 import { writeHtml } from "@tauri-apps/plugin-clipboard-manager";
-import { Copy, Plus } from "lucide-react";
+import { Copy } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ServiceGrid } from "@/components/services/ServiceGrid";
@@ -20,7 +20,6 @@ import { formatPrice } from "@/lib/format-price";
 
 export function AppShell() {
   const [editMode, setEditMode] = useState(false);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const { services, loading, addService, editService, removeService, reorder } =
     useServices();
   const { templateHtml, loading: templateLoading, updateTemplate } =
@@ -73,15 +72,6 @@ export function AppShell() {
               />
               <Label htmlFor="edit-mode">Bearbeitungsmodus</Label>
             </div>
-            {editMode ? (
-              <Button
-                onClick={() => setCreateDialogOpen(true)}
-                size="sm"
-              >
-                <Plus className="size-4" />
-                Neu
-              </Button>
-            ) : null}
           </div>
         </header>
 
@@ -102,8 +92,6 @@ export function AppShell() {
               }}
               onDelete={removeService}
               onReorder={reorder}
-              createDialogOpen={createDialogOpen}
-              onCreateDialogOpenChange={setCreateDialogOpen}
             />
           )}
         </section>
