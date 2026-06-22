@@ -2,7 +2,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import {Card, CardContent} from "@/components/ui/card";
 import { getContrastTextClass, normalizeHexColor } from "@/lib/color-utils";
 import { cn } from "@/lib/utils";
 import type { Service } from "@/types/service";
@@ -49,7 +49,7 @@ export function ServiceCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative transition-[filter,border-color,box-shadow]",
+        "relative py-2 transition-[filter,border-color,box-shadow]",
         !cardColor && "bg-card",
         !editMode && "cursor-pointer hover:brightness-95",
         selected && !editMode && "border-4 border-green-500 shadow-sm",
@@ -62,17 +62,45 @@ export function ServiceCard({
         }
       }}
     >
-      <CardContent className="flex items-start gap-1.5 px-2.5 py-1.5">
+      <CardContent className="flex items-start gap-1.5 px-2.5 py-0.5">
         {editMode ? (
-          <button
-            type="button"
-            className="mt-0.5 cursor-grab text-muted-foreground active:cursor-grabbing"
-            aria-label="Verschieben"
-            {...attributes}
-            {...listeners}
-          >
-            <GripVertical className="size-3.5" />
-          </button>
+            <div className=" flex flex-col shrink-0 items-center">
+              <button
+                  type="button"
+                  className="mt-0.5 cursor-grab text-muted-foreground active:cursor-grabbing"
+                  aria-label="Verschieben"
+                  {...attributes}
+                  {...listeners}
+              >
+                <GripVertical className="size-3.5"/>
+              </button>
+              <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-7"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onEdit();
+                  }}
+                  aria-label="Bearbeiten"
+              >
+                <Pencil className="size-3.5"/>
+              </Button>
+              <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-7 text-destructive hover:text-destructive"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onDelete();
+                  }}
+                  aria-label="Löschen"
+              >
+                <Trash2 className="size-3.5"/>
+              </Button>
+            </div>
         ) : null}
         <p
           className={cn(
@@ -82,36 +110,6 @@ export function ServiceCard({
         >
           {service.title}
         </p>
-        {editMode ? (
-          <div className="flex shrink-0 items-center gap-0.5">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-7"
-              onClick={(event) => {
-                event.stopPropagation();
-                onEdit();
-              }}
-              aria-label="Bearbeiten"
-            >
-              <Pencil className="size-3.5" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-7 text-destructive hover:text-destructive"
-              onClick={(event) => {
-                event.stopPropagation();
-                onDelete();
-              }}
-              aria-label="Löschen"
-            >
-              <Trash2 className="size-3.5" />
-            </Button>
-          </div>
-        ) : null}
       </CardContent>
     </Card>
   );

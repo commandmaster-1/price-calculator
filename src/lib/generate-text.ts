@@ -69,6 +69,18 @@ export function calculateTotalCents(
   }, 0);
 }
 
+export function formatGoaeText(
+  services: Service[],
+  selectedIds: number[],
+): string {
+  const serviceMap = new Map(services.map((service) => [service.id, service]));
+
+  return selectedIds
+    .map((id) => serviceMap.get(id)?.goae.trim())
+    .filter((goae): goae is string => Boolean(goae))
+    .join("-");
+}
+
 function escapeHtml(text: string): string {
   return text
     .replaceAll("&", "&amp;")

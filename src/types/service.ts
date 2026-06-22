@@ -4,6 +4,7 @@ export interface Service {
   price_cents: number;
   category: string;
   color: string;
+  goae: string;
   sort_order: number;
 }
 
@@ -12,6 +13,7 @@ export interface CreateServiceInput {
   price_cents: number;
   category: string;
   color: string;
+  goae: string;
 }
 
 export interface UpdateServiceInput extends CreateServiceInput {

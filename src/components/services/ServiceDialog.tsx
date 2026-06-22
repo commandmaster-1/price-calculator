@@ -24,6 +24,7 @@ interface ServiceDialogProps {
     price_cents: number;
     category: string;
     color: string;
+    goae: string;
   }) => Promise<void>;
 }
 
@@ -38,6 +39,7 @@ export function ServiceDialog({
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
   const [color, setColor] = useState<string>(DEFAULT_COLOR_PRESETS[0]);
+  const [goae, setGoae] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,6 +49,7 @@ export function ServiceDialog({
       setPrice(service ? formatPriceInput(service.price_cents) : "");
       setCategory(service?.category ?? "");
       setColor(service?.color || DEFAULT_COLOR_PRESETS[0]);
+      setGoae(service?.goae || "");
       setError(null);
     }
   }, [open, service]);
@@ -73,6 +76,7 @@ export function ServiceDialog({
         title: title.trim(),
         price_cents: priceCents,
         category: category.trim(),
+        goae: goae.trim(),
         color,
       });
       onOpenChange(false);
@@ -118,6 +122,14 @@ export function ServiceDialog({
                 value={category}
                 onChange={(event) => setCategory(event.target.value)}
                 placeholder="Optional, z. B. Planung"
+              />
+            </Field>
+            <Field>
+              <FieldLabel>GOÄ</FieldLabel>
+              <Input id="service-goae"
+                     value={goae}
+                     onChange={(event) => setGoae(event.target.value)}
+                     placeholder="GOÄ Code"
               />
             </Field>
           </FieldGroup>

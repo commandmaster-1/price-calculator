@@ -26,6 +26,7 @@ pub fn create_service(
             input.price_cents,
             input.category.trim(),
             input.color.trim(),
+            input.goae.trim(),
         )
         .map_err(|e| e.to_string())
     })
@@ -50,6 +51,7 @@ pub fn update_service(
             input.price_cents,
             input.category.trim(),
             input.color.trim(),
+            input.goae.trim(),
         )
         .map_err(|e| e.to_string())
     })

@@ -1,4 +1,5 @@
 pub mod manager;
+mod migrations;
 
 pub use manager::DatabaseManager;
 
@@ -13,6 +14,8 @@ use crate::models::Service;
 pub enum DbError {
     #[error("database error: {0}")]
     Sqlite(#[from] rusqlite::Error),
+    #[error("migration error: {0}")]
+    Migration(#[from] refinery::Error),
 }
 
 pub struct DbState {
@@ -34,43 +37,8 @@ impl DbState {
     }
 
     fn migrate(&self) -> Result<(), DbError> {
-        let conn = self.conn.lock().unwrap();
-        conn.execute_batch(
-            "
-            CREATE TABLE IF NOT EXISTS services (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                price_cents INTEGER NOT NULL,
-                category TEXT NOT NULL DEFAULT '',
-                color TEXT NOT NULL DEFAULT '',
-                sort_order INTEGER NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS settings (
-                key TEXT PRIMARY KEY,
-                value TEXT NOT NULL
-            );
-            ",
-        )?;
-
-        let mut has_color_column = false;
-        let mut columns = conn.prepare("PRAGMA table_info(services)")?;
-        let column_names = columns.query_map([], |row| row.get::<_, String>(1))?;
-        for name in column_names {
-            if name? == "color" {
-                has_color_column = true;
-                break;
-            }
-        }
-
-        if !has_color_column {
-            conn.execute(
-                "ALTER TABLE services ADD COLUMN color TEXT NOT NULL DEFAULT ''",
-                [],
-            )?;
-        }
-
-        Ok(())
+        let mut conn = self.conn.lock().unwrap();
+        migrations::run(&mut conn)
     }
 
     fn map_service(row: &rusqlite::Row<'_>) -> rusqlite::Result<Service> {
@@ -81,13 +49,14 @@ impl DbState {
             category: row.get(3)?,
             color: row.get(4)?,
             sort_order: row.get(5)?,
+            goae: row.get(6)?,
         })
     }
 
     pub fn list_services(&self) -> Result<Vec<Service>, DbError> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, title, price_cents, category, color, sort_order
+            "SELECT id, title, price_cents, category, color, sort_order, goae
              FROM services
              ORDER BY sort_order ASC, id ASC",
         )?;
@@ -105,6 +74,7 @@ impl DbState {
         price_cents: i64,
         category: &str,
         color: &str,
+        goae: &str,
     ) -> Result<Service, DbError> {
         let conn = self.conn.lock().unwrap();
         let sort_order: i64 = conn.query_row(
@@ -114,9 +84,9 @@ impl DbState {
         )?;
 
         conn.execute(
-            "INSERT INTO services (title, price_cents, category, color, sort_order)
-             VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![title, price_cents, category, color, sort_order],
+            "INSERT INTO services (title, price_cents, category, color, sort_order, goae)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![title, price_cents, category, color, sort_order, goae],
         )?;
 
         let id = conn.last_insert_rowid();
@@ -127,6 +97,7 @@ impl DbState {
             category: category.to_string(),
             color: color.to_string(),
             sort_order,
+            goae: goae.to_string(),
         })
     }
 
@@ -137,13 +108,14 @@ impl DbState {
         price_cents: i64,
         category: &str,
         color: &str,
+        goae: &str,
     ) -> Result<Service, DbError> {
         let conn = self.conn.lock().unwrap();
         let rows = conn.execute(
             "UPDATE services
-             SET title = ?1, price_cents = ?2, category = ?3, color = ?4
-             WHERE id = ?5",
-            params![title, price_cents, category, color, id],
+             SET title = ?1, price_cents = ?2, category = ?3, color = ?4, goae = ?5
+             WHERE id = ?6",
+            params![title, price_cents, category, color, goae, id],
         )?;
 
         if rows == 0 {
@@ -151,7 +123,7 @@ impl DbState {
         }
 
         let service = conn.query_row(
-            "SELECT id, title, price_cents, category, color, sort_order
+            "SELECT id, title, price_cents, category, color, sort_order, goae
              FROM services WHERE id = ?1",
             params![id],
             Self::map_service,

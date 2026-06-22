@@ -1,4 +1,4 @@
-import { writeHtml } from "@tauri-apps/plugin-clipboard-manager";
+import { writeHtml, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { Copy } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ import { useDatabaseConfig } from "@/hooks/useDatabaseConfig";
 import { useSelection } from "@/hooks/useSelection";
 import { useServices } from "@/hooks/useServices";
 import { useTemplate } from "@/hooks/useTemplate";
-import { calculateTotalCents, generateText } from "@/lib/generate-text";
+import { calculateTotalCents, formatGoaeText, generateText } from "@/lib/generate-text";
 import { formatPrice } from "@/lib/format-price";
 
 function AppShellContent({ editMode }: { editMode: boolean }) {
@@ -37,7 +37,12 @@ function AppShellContent({ editMode }: { editMode: boolean }) {
     [templateHtml, services, selectedIds],
   );
 
-  async function handleCopy() {
+  const goaeText = useMemo(
+    () => formatGoaeText(services, selectedIds),
+    [services, selectedIds],
+  );
+
+  async function handleTemplateCopy() {
     const { html, plainText } = generateText(
       templateHtml,
       services,
@@ -49,6 +54,17 @@ function AppShellContent({ editMode }: { editMode: boolean }) {
       toast.success("Text in Zwischenablage kopiert.");
     } catch (error) {
       toast.error("Text konnte nicht kopiert werden.", {
+        description: String(error),
+      });
+    }
+  }
+
+  async function handleGoaeCopy() {
+    try {
+      await writeText(goaeText);
+      toast.success("GOAE in Zwischenablage kopiert.");
+    } catch (error) {
+      toast.error("GOAE konnte nicht kopiert werden.", {
         description: String(error),
       });
     }
@@ -102,10 +118,22 @@ function AppShellContent({ editMode }: { editMode: boolean }) {
           </Badge>
           <span>Gesamt: {formatPrice(totalCents)}</span>
         </div>
-        <Button onClick={handleCopy} disabled={selectedIds.length === 0}>
-          <Copy className="size-4" />
-          Text kopieren
-        </Button>
+
+        <div className="flex gap-4">
+          <Button
+              className=""
+              variant="secondary"
+              onClick={handleGoaeCopy}
+              disabled={!goaeText}
+          >
+            <Copy className="size-4" />
+            GOÄ kopieren
+          </Button>
+          <Button onClick={handleTemplateCopy} disabled={selectedIds.length === 0}>
+            <Copy className="size-4" />
+            Text kopieren
+          </Button>
+        </div>
       </footer>
     </>
   );

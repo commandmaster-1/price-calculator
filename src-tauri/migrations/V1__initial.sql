@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS services (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    price_cents INTEGER NOT NULL,
+    category TEXT NOT NULL DEFAULT '',
+    sort_order INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
