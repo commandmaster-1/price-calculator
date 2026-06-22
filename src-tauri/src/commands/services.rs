@@ -63,5 +63,7 @@ pub fn reorder_services(
     state: State<'_, DbState>,
     ordered_ids: Vec<i64>,
 ) -> Result<Vec<Service>, String> {
-    state.reorder_services(&ordered_ids).map_err(|e| e.to_string())
+    state
+        .reorder_services(&ordered_ids)
+        .map_err(|e| e.to_string())
 }
