@@ -1,6 +1,6 @@
 use tauri::State;
 
-use crate::db::DbState;
+use crate::db::DatabaseManager;
 
 const TEMPLATE_KEY: &str = "template_html";
 const COLOR_PRESETS_KEY: &str = "color_presets";
@@ -13,42 +13,51 @@ const DEFAULT_COLOR_PRESETS: [&str; 10] = [
 ];
 
 #[tauri::command]
-pub fn get_template(state: State<'_, DbState>) -> Result<String, String> {
-    match state.get_setting(TEMPLATE_KEY).map_err(|e| e.to_string())? {
-        Some(value) => Ok(value),
-        None => Ok(DEFAULT_TEMPLATE.to_string()),
-    }
+pub fn get_template(manager: State<'_, DatabaseManager>) -> Result<String, String> {
+    manager.with_db(|db| {
+        match db.get_setting(TEMPLATE_KEY).map_err(|e| e.to_string())? {
+            Some(value) => Ok(value),
+            None => Ok(DEFAULT_TEMPLATE.to_string()),
+        }
+    })
 }
 
 #[tauri::command]
-pub fn save_template(state: State<'_, DbState>, html: String) -> Result<(), String> {
-    state
-        .set_setting(TEMPLATE_KEY, &html)
-        .map_err(|e| e.to_string())
+pub fn save_template(manager: State<'_, DatabaseManager>, html: String) -> Result<(), String> {
+    manager.with_db(|db| {
+        db.set_setting(TEMPLATE_KEY, &html)
+            .map_err(|e| e.to_string())
+    })
 }
 
 #[tauri::command]
-pub fn get_color_presets(state: State<'_, DbState>) -> Result<Vec<String>, String> {
-    match state
-        .get_setting(COLOR_PRESETS_KEY)
-        .map_err(|e| e.to_string())?
-    {
-        Some(value) => serde_json::from_str(&value).map_err(|e| e.to_string()),
-        None => Ok(DEFAULT_COLOR_PRESETS
-            .iter()
-            .map(|color| (*color).to_string())
-            .collect()),
-    }
+pub fn get_color_presets(manager: State<'_, DatabaseManager>) -> Result<Vec<String>, String> {
+    manager.with_db(|db| {
+        match db
+            .get_setting(COLOR_PRESETS_KEY)
+            .map_err(|e| e.to_string())?
+        {
+            Some(value) => serde_json::from_str(&value).map_err(|e| e.to_string()),
+            None => Ok(DEFAULT_COLOR_PRESETS
+                .iter()
+                .map(|color| (*color).to_string())
+                .collect()),
+        }
+    })
 }
 
 #[tauri::command]
-pub fn save_color_presets(state: State<'_, DbState>, presets: Vec<String>) -> Result<(), String> {
+pub fn save_color_presets(
+    manager: State<'_, DatabaseManager>,
+    presets: Vec<String>,
+) -> Result<(), String> {
     if presets.len() != 10 {
         return Err("Es müssen genau 10 Farb-Presets übergeben werden.".to_string());
     }
 
     let serialized = serde_json::to_string(&presets).map_err(|e| e.to_string())?;
-    state
-        .set_setting(COLOR_PRESETS_KEY, &serialized)
-        .map_err(|e| e.to_string())
+    manager.with_db(|db| {
+        db.set_setting(COLOR_PRESETS_KEY, &serialized)
+            .map_err(|e| e.to_string())
+    })
 }

@@ -1,9 +1,31 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
+  DatabaseFileMode,
+  DatabaseStatus,
+} from "@/types/database";
+import type {
   CreateServiceInput,
   Service,
   UpdateServiceInput,
 } from "@/types/service";
+
+export function getDatabaseStatus(): Promise<DatabaseStatus> {
+  return invoke<DatabaseStatus>("get_database_status");
+}
+
+export function pickDatabaseFile(
+  mode: DatabaseFileMode,
+): Promise<string | null> {
+  return invoke<string | null>("pick_database_file", { mode });
+}
+
+export function setDatabasePath(path: string): Promise<void> {
+  return invoke<void>("set_database_path", { path });
+}
+
+export function changeDatabasePath(path: string): Promise<void> {
+  return invoke<void>("change_database_path", { path });
+}
 
 export function listServices(): Promise<Service[]> {
   return invoke<Service[]>("list_services");

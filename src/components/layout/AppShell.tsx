@@ -2,6 +2,7 @@ import { writeHtml } from "@tauri-apps/plugin-clipboard-manager";
 import { Copy } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { DatabaseSettings } from "@/components/settings/DatabaseSettings";
 import { ServiceGrid } from "@/components/services/ServiceGrid";
 import { GeneratedTextPreview } from "@/components/template/GeneratedTextPreview";
 import { PlaceholderHint } from "@/components/template/PlaceholderHint";
@@ -12,14 +13,14 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useDatabaseConfig } from "@/hooks/useDatabaseConfig";
 import { useSelection } from "@/hooks/useSelection";
 import { useServices } from "@/hooks/useServices";
 import { useTemplate } from "@/hooks/useTemplate";
 import { calculateTotalCents, generateText } from "@/lib/generate-text";
 import { formatPrice } from "@/lib/format-price";
 
-export function AppShell() {
-  const [editMode, setEditMode] = useState(false);
+function AppShellContent({ editMode }: { editMode: boolean }) {
   const { services, loading, addService, editService, removeService, reorder } =
     useServices();
   const { templateHtml, loading: templateLoading, updateTemplate } =
@@ -54,6 +55,68 @@ export function AppShell() {
   }
 
   return (
+    <>
+      <section className="min-h-0 flex-1 overflow-hidden px-4 py-3">
+        {loading ? (
+          <p className="text-sm text-muted-foreground">Lade Dienstleistungen…</p>
+        ) : (
+          <ServiceGrid
+            services={services}
+            editMode={editMode}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelection}
+            onCreate={async (values) => {
+              await addService(values);
+            }}
+            onUpdate={async (id, values) => {
+              await editService({ id, ...values });
+            }}
+            onDelete={removeService}
+            onReorder={reorder}
+          />
+        )}
+      </section>
+
+      <Separator />
+
+      <section className="space-y-3 px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-medium">
+            {editMode ? "Vorlage" : "Generierter Text"}
+          </h2>
+          {editMode ? <PlaceholderHint /> : null}
+        </div>
+        {templateLoading ? (
+          <p className="text-sm text-muted-foreground">Lade Vorlage…</p>
+        ) : editMode ? (
+          <TemplateEditor value={templateHtml} onChange={updateTemplate} />
+        ) : (
+          <GeneratedTextPreview html={generatedPreview.html} />
+        )}
+      </section>
+
+      <footer className="flex items-center justify-between gap-4 border-t px-4 py-3">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Badge variant="secondary">
+            {selectedIds.length} ausgewählt
+          </Badge>
+          <span>Gesamt: {formatPrice(totalCents)}</span>
+        </div>
+        <Button onClick={handleCopy} disabled={selectedIds.length === 0}>
+          <Copy className="size-4" />
+          Text kopieren
+        </Button>
+      </footer>
+    </>
+  );
+}
+
+export function AppShell() {
+  const [editMode, setEditMode] = useState(false);
+  const [dataKey, setDataKey] = useState(0);
+  const { path, pickFile, changePath } = useDatabaseConfig();
+
+  return (
     <TooltipProvider>
       <div className="flex h-screen flex-col bg-background">
         <header className="flex items-center justify-between gap-4 border-b px-4 py-3">
@@ -72,60 +135,16 @@ export function AppShell() {
               />
               <Label htmlFor="edit-mode">Bearbeitungsmodus</Label>
             </div>
+            <DatabaseSettings
+              currentPath={path}
+              onPickFile={pickFile}
+              onChangePath={changePath}
+              onDatabaseChanged={() => setDataKey((current) => current + 1)}
+            />
           </div>
         </header>
 
-        <section className="min-h-0 flex-1 overflow-hidden px-4 py-3">
-          {loading ? (
-            <p className="text-sm text-muted-foreground">Lade Dienstleistungen…</p>
-          ) : (
-            <ServiceGrid
-              services={services}
-              editMode={editMode}
-              selectedIds={selectedIds}
-              onToggleSelect={toggleSelection}
-              onCreate={async (values) => {
-                await addService(values);
-              }}
-              onUpdate={async (id, values) => {
-                await editService({ id, ...values });
-              }}
-              onDelete={removeService}
-              onReorder={reorder}
-            />
-          )}
-        </section>
-
-        <Separator />
-
-        <section className="space-y-3 px-4 py-3">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-medium">
-              {editMode ? "Vorlage" : "Generierter Text"}
-            </h2>
-            {editMode ? <PlaceholderHint /> : null}
-          </div>
-          {templateLoading ? (
-            <p className="text-sm text-muted-foreground">Lade Vorlage…</p>
-          ) : editMode ? (
-            <TemplateEditor value={templateHtml} onChange={updateTemplate} />
-          ) : (
-            <GeneratedTextPreview html={generatedPreview.html} />
-          )}
-        </section>
-
-        <footer className="flex items-center justify-between gap-4 border-t px-4 py-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Badge variant="secondary">
-              {selectedIds.length} ausgewählt
-            </Badge>
-            <span>Gesamt: {formatPrice(totalCents)}</span>
-          </div>
-          <Button onClick={handleCopy} disabled={selectedIds.length === 0}>
-            <Copy className="size-4" />
-            Text kopieren
-          </Button>
-        </footer>
+        <AppShellContent key={dataKey} editMode={editMode} />
       </div>
     </TooltipProvider>
   );

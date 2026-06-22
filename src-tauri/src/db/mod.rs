@@ -1,3 +1,7 @@
+pub mod manager;
+
+pub use manager::DatabaseManager;
+
 use rusqlite::{params, Connection};
 use std::path::PathBuf;
 use std::sync::Mutex;
