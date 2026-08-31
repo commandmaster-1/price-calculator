@@ -177,7 +177,7 @@ function AppShellContent({
           <div className="space-y-1">
             <GeneratedTextPreview html={generatedPreview.html} />
             {/* <p className="px-0.5 text-xs text-muted-foreground break-all">
-              {goaeText ? `GOÄ: ${goaeText}` : "Keine GOÄ-Nummern ausgewählt"}
+              {goaeText ? `GOÄ: ${goaeText}` : "Keine GOÄ-Ziffern ausgewählt"}
             </p> */}
           </div>
         )}

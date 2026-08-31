@@ -131,7 +131,7 @@ export function ServiceCard({
       </TooltipTrigger>
       <TooltipContent side="top" sideOffset={6} className="max-w-60 text-left">
         <div className="flex flex-col gap-0.5">
-          <span>{goae ? `GOÄ: ${goae}` : "Keine GOÄ-Nummern"}</span>
+          <span>{goae ? `GOÄ: ${goae}` : "Keine GOÄ-Ziffern"}</span>
           {parameters ? <span>Parameter: {parameters}</span> : null}
           {editMode ? <span>Preis: {formatPrice(service.price_cents)}</span> : null}
         </div>

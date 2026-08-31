@@ -145,7 +145,7 @@ impl DbState {
             )?;
             if exists == 0 {
                 return Err(DbError::Validation(
-                    "Eine ausgewählte GOÄ-Nummer existiert nicht mehr.".to_string(),
+                    "Eine ausgewählte GOÄ-Ziffer existiert nicht mehr.".to_string(),
                 ));
             }
         }

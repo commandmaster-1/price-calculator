@@ -44,7 +44,7 @@ export function GoaeManagerDialog({
   async function handleCreate(event: SubmitEvent) {
     event.preventDefault();
     if (!number.trim() || !parameter.trim()) {
-      setError("Bitte Nummer und Parameter eingeben.");
+      setError("Bitte Ziffer und Parameter eingeben.");
       return;
     }
 
@@ -70,7 +70,7 @@ export function GoaeManagerDialog({
 
   async function handleUpdate(itemId: number) {
     if (!editNumber.trim() || !editParameter.trim()) {
-      setError("Bitte Nummer und Parameter eingeben.");
+      setError("Bitte Ziffer und Parameter eingeben.");
       return;
     }
 
@@ -110,14 +110,14 @@ export function GoaeManagerDialog({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button type="button" variant="outline">
-            GOÄ-Nummern
+            GOÄ-Ziffern
           </Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>GOÄ-Nummern verwalten</DialogTitle>
+            <DialogTitle>GOÄ-Ziffern verwalten</DialogTitle>
             <DialogDescription>
-              Legen Sie GOÄ-Nummern zusammen mit einem Parameter an. Diese
+              Legen Sie GOÄ-Ziffern zusammen mit einem Parameter an. Diese
               Paare können anschließend bei den Dienstleistungen ausgewählt
               werden.
             </DialogDescription>
@@ -127,7 +127,7 @@ export function GoaeManagerDialog({
             <FieldGroup className="gap-3">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
                 <Field>
-                  <FieldLabel htmlFor="goae-number">Nummer</FieldLabel>
+                  <FieldLabel htmlFor="goae-number">Ziffer</FieldLabel>
                   <Input
                     id="goae-number"
                     value={number}
@@ -155,10 +155,10 @@ export function GoaeManagerDialog({
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
           {loading ? (
-            <p className="text-sm text-muted-foreground">Lade GOÄ-Nummern…</p>
+            <p className="text-sm text-muted-foreground">Lade GOÄ-Ziffern…</p>
           ) : items.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Noch keine GOÄ-Nummern vorhanden.
+              Noch keine GOÄ-Ziffern vorhanden.
             </p>
           ) : (
             <ScrollArea className="max-h-72">
@@ -173,7 +173,7 @@ export function GoaeManagerDialog({
                         <Input
                           value={editNumber}
                           onChange={(event) => setEditNumber(event.target.value)}
-                          aria-label="GOÄ-Nummer"
+                          aria-label="GOÄ-Ziffer"
                         />
                         <Input
                           value={editParameter}
@@ -251,7 +251,7 @@ export function GoaeManagerDialog({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>GOÄ-Nummer löschen?</DialogTitle>
+            <DialogTitle>GOÄ-Ziffer löschen?</DialogTitle>
             <DialogDescription>
               „{deleteTarget?.number}“
               {deleteTarget?.parameter ? ` (${deleteTarget.parameter})` : ""}{" "}

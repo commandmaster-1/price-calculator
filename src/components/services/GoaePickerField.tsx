@@ -30,8 +30,8 @@ export function GoaePickerField({
       <FieldLabel>GOÄ</FieldLabel>
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Noch keine GOÄ-Nummern vorhanden. Bitte zuerst im Menü
-          „GOÄ-Nummern“ anlegen.
+          Noch keine GOÄ-Ziffern vorhanden. Bitte zuerst im Menü
+          „GOÄ-Ziffern“ anlegen.
         </p>
       ) : (
         <ScrollArea className="max-h-44 rounded-md border">

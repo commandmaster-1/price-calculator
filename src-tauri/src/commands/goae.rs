@@ -6,7 +6,7 @@ use crate::models::{CreateGoaeItemInput, GoaeItem, UpdateGoaeItemInput};
 fn map_db_error(error: crate::db::DbError) -> String {
     let message = error.to_string();
     if message.contains("UNIQUE constraint failed") {
-        "Diese GOÄ-Nummer existiert bereits.".to_string()
+        "Diese GOÄ-Ziffer existiert bereits.".to_string()
     } else {
         message
     }
@@ -26,7 +26,7 @@ pub fn create_goae_item(
     let parameter = input.parameter.trim();
 
     if number.is_empty() {
-        return Err("Bitte eine GOÄ-Nummer eingeben.".to_string());
+        return Err("Bitte eine GOÄ-Ziffer eingeben.".to_string());
     }
     if parameter.is_empty() {
         return Err("Bitte einen Parameter eingeben.".to_string());
@@ -44,7 +44,7 @@ pub fn update_goae_item(
     let parameter = input.parameter.trim();
 
     if number.is_empty() {
-        return Err("Bitte eine GOÄ-Nummer eingeben.".to_string());
+        return Err("Bitte eine GOÄ-Ziffer eingeben.".to_string());
     }
     if parameter.is_empty() {
         return Err("Bitte einen Parameter eingeben.".to_string());

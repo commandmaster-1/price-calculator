@@ -21,7 +21,7 @@ export function useGoaeItems() {
       const data = await listGoaeItems();
       setItems(data);
     } catch (error) {
-      toast.error("GOÄ-Nummern konnten nicht geladen werden.", {
+      toast.error("GOÄ-Ziffern konnten nicht geladen werden.", {
         description: String(error),
       });
     } finally {
@@ -36,7 +36,7 @@ export function useGoaeItems() {
   const addItem = useCallback(async (input: CreateGoaeItemInput) => {
     const created = await createGoaeItem(input);
     setItems((current) => [...current, created]);
-    toast.success("GOÄ-Nummer erstellt.", { duration: 1200 });
+    toast.success("GOÄ-Ziffer erstellt.", { duration: 1200 });
     return created;
   }, []);
 
@@ -45,14 +45,14 @@ export function useGoaeItems() {
     setItems((current) =>
       current.map((item) => (item.id === updated.id ? updated : item)),
     );
-    toast.success("GOÄ-Nummer aktualisiert.", { duration: 1200 });
+    toast.success("GOÄ-Ziffer aktualisiert.", { duration: 1200 });
     return updated;
   }, []);
 
   const removeItem = useCallback(async (id: number) => {
     await deleteGoaeItem(id);
     setItems((current) => current.filter((item) => item.id !== id));
-    toast.success("GOÄ-Nummer gelöscht.", { duration: 1200 });
+    toast.success("GOÄ-Ziffer gelöscht.", { duration: 1200 });
   }, []);
 
   return {
