@@ -8,6 +8,7 @@ use tauri::Manager;
 use commands::database::{
     change_database_path, get_database_status, pick_database_file, set_database_path,
 };
+use commands::goae::{create_goae_item, delete_goae_item, list_goae_items, update_goae_item};
 use commands::services::{
     create_service, delete_service, list_services, reorder_services, update_service,
 };
@@ -42,6 +43,10 @@ pub fn run() {
             update_service,
             delete_service,
             reorder_services,
+            list_goae_items,
+            create_goae_item,
+            update_goae_item,
+            delete_goae_item,
             get_template,
             save_template,
             get_color_presets,

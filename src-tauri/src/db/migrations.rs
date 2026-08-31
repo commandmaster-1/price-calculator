@@ -38,7 +38,8 @@ pub fn run(conn: &mut Connection) -> Result<(), DbError> {
         let has_goae = column_exists(conn, "services", "goae")?;
 
         if has_color && has_goae {
-            runner.set_target(Target::Fake).run(conn)?;
+            runner.set_target(Target::FakeVersion(3)).run(conn)?;
+            embedded::migrations::runner().run(conn)?;
         } else if has_color {
             runner.set_target(Target::FakeVersion(2)).run(conn)?;
             embedded::migrations::runner().run(conn)?;
@@ -74,9 +75,11 @@ mod tests {
 
         assert!(table_exists(&conn, "services").unwrap());
         assert!(table_exists(&conn, "settings").unwrap());
+        assert!(table_exists(&conn, "goae_items").unwrap());
+        assert!(table_exists(&conn, "service_goae").unwrap());
         assert!(column_exists(&conn, "services", "color").unwrap());
-        assert!(column_exists(&conn, "services", "goae").unwrap());
-        assert_eq!(migration_count(&conn), 3);
+        assert!(!column_exists(&conn, "services", "goae").unwrap());
+        assert_eq!(migration_count(&conn), 4);
     }
 
     #[test]
@@ -116,8 +119,9 @@ mod tests {
         assert_eq!(services[0].title, "Test");
 
         let conn = state.conn.lock().unwrap();
-        assert!(column_exists(&conn, "services", "goae").unwrap());
-        assert_eq!(migration_count(&conn), 3);
+        assert!(table_exists(&conn, "goae_items").unwrap());
+        assert!(!column_exists(&conn, "services", "goae").unwrap());
+        assert_eq!(migration_count(&conn), 4);
 
         let _ = std::fs::remove_file(path);
     }
@@ -153,8 +157,9 @@ mod tests {
         let state = crate::db::DbState::new(PathBuf::from(&path)).unwrap();
         let conn = state.conn.lock().unwrap();
         assert!(column_exists(&conn, "services", "color").unwrap());
-        assert!(column_exists(&conn, "services", "goae").unwrap());
-        assert_eq!(migration_count(&conn), 3);
+        assert!(table_exists(&conn, "goae_items").unwrap());
+        assert!(!column_exists(&conn, "services", "goae").unwrap());
+        assert_eq!(migration_count(&conn), 4);
 
         let _ = std::fs::remove_file(path);
     }
@@ -177,8 +182,63 @@ mod tests {
 
         let state = crate::db::DbState::new(PathBuf::from(&path)).unwrap();
         let conn = state.conn.lock().unwrap();
-        assert!(column_exists(&conn, "services", "goae").unwrap());
-        assert_eq!(migration_count(&conn), 3);
+        assert!(table_exists(&conn, "goae_items").unwrap());
+        assert!(!column_exists(&conn, "services", "goae").unwrap());
+        assert_eq!(migration_count(&conn), 4);
+
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn legacy_database_with_goae_migrates_catalog() {
+        let path = std::env::temp_dir().join(format!(
+            "price-calculator-goae-legacy-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_file(&path);
+
+        {
+            let conn = Connection::open(&path).unwrap();
+            conn.execute_batch(
+                "
+                CREATE TABLE services (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    price_cents INTEGER NOT NULL,
+                    category TEXT NOT NULL DEFAULT '',
+                    color TEXT NOT NULL DEFAULT '',
+                    sort_order INTEGER NOT NULL,
+                    goae TEXT NOT NULL DEFAULT ''
+                );
+                CREATE TABLE settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                );
+                INSERT INTO services (title, price_cents, category, color, sort_order, goae)
+                VALUES
+                    ('Beratung', 1000, 'Cat', '#fff', 0, '250'),
+                    ('Labor', 2000, 'Cat', '#fff', 1, '250'),
+                    ('Ohne', 500, 'Cat', '#fff', 2, '');
+                ",
+            )
+            .unwrap();
+        }
+
+        let state = crate::db::DbState::new(PathBuf::from(&path)).unwrap();
+        let services = state.list_services().unwrap();
+        assert_eq!(services.len(), 3);
+        assert_eq!(services[0].goae_items.len(), 1);
+        assert_eq!(services[0].goae_items[0].number, "250");
+        assert_eq!(services[1].goae_items[0].id, services[0].goae_items[0].id);
+        assert!(services[2].goae_items.is_empty());
+
+        let items = state.list_goae_items().unwrap();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].number, "250");
+
+        let conn = state.conn.lock().unwrap();
+        assert!(!column_exists(&conn, "services", "goae").unwrap());
+        assert_eq!(migration_count(&conn), 4);
 
         let _ = std::fs::remove_file(path);
     }

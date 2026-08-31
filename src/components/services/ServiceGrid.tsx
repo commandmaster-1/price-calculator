@@ -25,6 +25,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ServiceCard } from "@/components/services/ServiceCard";
 import { ServiceDialog } from "@/components/services/ServiceDialog";
+import type { GoaeItem } from "@/types/goae";
 import type { Service } from "@/types/service";
 
 interface ServiceGridProps {
@@ -32,16 +33,23 @@ interface ServiceGridProps {
   editMode: boolean;
   selectedIds: number[];
   onToggleSelect: (id: number) => void;
+  goaeItems: GoaeItem[];
   onCreate: (values: {
     title: string;
     price_cents: number;
     category: string;
     color: string;
-    goae: string;
+    goae_ids: number[];
   }) => Promise<void>;
   onUpdate: (
     id: number,
-    values: { title: string; price_cents: number; category: string; color: string, goae: string, },
+    values: {
+      title: string;
+      price_cents: number;
+      category: string;
+      color: string;
+      goae_ids: number[];
+    },
   ) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
   onReorder: (orderedIds: number[]) => Promise<void>;
@@ -49,6 +57,7 @@ interface ServiceGridProps {
 
 export function ServiceGrid({
   services,
+  goaeItems,
   editMode,
   selectedIds,
   onToggleSelect,
@@ -164,6 +173,7 @@ export function ServiceGrid({
           if (!open) setEditingService(null);
         }}
         service={editingService}
+        goaeItems={goaeItems}
         onSubmit={async (values) => {
           if (editingService) {
             await onUpdate(editingService.id, values);

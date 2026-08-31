@@ -2,6 +2,7 @@ import { writeHtml, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { Copy } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { GoaeManagerDialog } from "@/components/goae/GoaeManagerDialog";
 import { DatabaseSettings } from "@/components/settings/DatabaseSettings";
 import { ServiceGrid } from "@/components/services/ServiceGrid";
 import { GeneratedTextPreview } from "@/components/template/GeneratedTextPreview";
@@ -14,15 +15,38 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useDatabaseConfig } from "@/hooks/useDatabaseConfig";
+import type { DatabaseFileMode } from "@/types/database";
+import { useGoaeItems } from "@/hooks/useGoaeItems";
 import { useSelection } from "@/hooks/useSelection";
 import { useServices } from "@/hooks/useServices";
 import { useTemplate } from "@/hooks/useTemplate";
 import { calculateTotalCents, formatGoaeText, generateText } from "@/lib/generate-text";
 import { formatPrice } from "@/lib/format-price";
 
-function AppShellContent({ editMode }: { editMode: boolean }) {
-  const { services, loading, addService, editService, removeService, reorder } =
+function AppShellContent({
+  editMode,
+  onEditModeChange,
+  databasePath,
+  onPickFile,
+  onChangePath,
+  onDatabaseChanged,
+}: {
+  editMode: boolean;
+  onEditModeChange: (value: boolean) => void;
+  databasePath: string | null;
+  onPickFile: (mode: DatabaseFileMode) => Promise<string | null>;
+  onChangePath: (path: string) => Promise<void>;
+  onDatabaseChanged: () => void;
+}) {
+  const { services, loading, addService, editService, removeService, reorder, refresh } =
     useServices();
+  const {
+    items: goaeItems,
+    loading: goaeLoading,
+    addItem,
+    editItem,
+    removeItem,
+  } = useGoaeItems();
   const { templateHtml, loading: templateLoading, updateTemplate } =
     useTemplate();
   const { selectedIds, toggleSelection } = useSelection();
@@ -72,12 +96,55 @@ function AppShellContent({ editMode }: { editMode: boolean }) {
 
   return (
     <>
+      <header className="flex items-center justify-between gap-4 border-b px-4 py-3">
+        <div>
+          <h1 className="text-lg font-semibold">Preisrechner</h1>
+          <p className="text-sm text-muted-foreground">
+            Dienstleistungen auswählen und Text generieren
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="edit-mode"
+              checked={editMode}
+              onCheckedChange={onEditModeChange}
+            />
+            <Label htmlFor="edit-mode">Bearbeitungsmodus</Label>
+          </div>
+          {editMode ? (
+            <GoaeManagerDialog
+              items={goaeItems}
+              loading={goaeLoading}
+              onCreate={async (values) => {
+                await addItem(values);
+              }}
+              onUpdate={async (id, values) => {
+                await editItem({ id, ...values });
+                await refresh();
+              }}
+              onDelete={async (id) => {
+                await removeItem(id);
+                await refresh();
+              }}
+            />
+          ) : null}
+          <DatabaseSettings
+            currentPath={databasePath}
+            onPickFile={onPickFile}
+            onChangePath={onChangePath}
+            onDatabaseChanged={onDatabaseChanged}
+          />
+        </div>
+      </header>
+
       <section className="min-h-0 flex-1 overflow-hidden px-4 py-3">
         {loading ? (
           <p className="text-sm text-muted-foreground">Lade Dienstleistungen…</p>
         ) : (
           <ServiceGrid
             services={services}
+            goaeItems={goaeItems}
             editMode={editMode}
             selectedIds={selectedIds}
             onToggleSelect={toggleSelection}
@@ -107,7 +174,12 @@ function AppShellContent({ editMode }: { editMode: boolean }) {
         ) : editMode ? (
           <TemplateEditor value={templateHtml} onChange={updateTemplate} />
         ) : (
-          <GeneratedTextPreview html={generatedPreview.html} />
+          <div className="space-y-1">
+            <GeneratedTextPreview html={generatedPreview.html} />
+            {/* <p className="px-0.5 text-xs text-muted-foreground break-all">
+              {goaeText ? `GOÄ: ${goaeText}` : "Keine GOÄ-Nummern ausgewählt"}
+            </p> */}
+          </div>
         )}
       </section>
 
@@ -145,34 +217,17 @@ export function AppShell() {
   const { path, pickFile, changePath } = useDatabaseConfig();
 
   return (
-    <TooltipProvider>
+    <TooltipProvider skipDelayDuration={0}>
       <div className="flex h-screen flex-col bg-background">
-        <header className="flex items-center justify-between gap-4 border-b px-4 py-3">
-          <div>
-            <h1 className="text-lg font-semibold">Preisrechner</h1>
-            <p className="text-sm text-muted-foreground">
-              Dienstleistungen auswählen und Text generieren
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="edit-mode"
-                checked={editMode}
-                onCheckedChange={setEditMode}
-              />
-              <Label htmlFor="edit-mode">Bearbeitungsmodus</Label>
-            </div>
-            <DatabaseSettings
-              currentPath={path}
-              onPickFile={pickFile}
-              onChangePath={changePath}
-              onDatabaseChanged={() => setDataKey((current) => current + 1)}
-            />
-          </div>
-        </header>
-
-        <AppShellContent key={dataKey} editMode={editMode} />
+        <AppShellContent
+          key={dataKey}
+          editMode={editMode}
+          onEditModeChange={setEditMode}
+          databasePath={path}
+          onPickFile={pickFile}
+          onChangePath={changePath}
+          onDatabaseChanged={() => setDataKey((current) => current + 1)}
+        />
       </div>
     </TooltipProvider>
   );

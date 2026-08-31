@@ -2,8 +2,14 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {Card, CardContent} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { getContrastTextClass, normalizeHexColor } from "@/lib/color-utils";
+import { formatPrice } from "@/lib/format-price";
 import { cn } from "@/lib/utils";
 import type { Service } from "@/types/service";
 
@@ -37,6 +43,14 @@ export function ServiceCard({
   });
 
   const cardColor = normalizeHexColor(service.color);
+  const goae = service.goae_items
+    .map((item) => item.number.trim())
+    .filter(Boolean)
+    .join("-");
+  const parameters = service.goae_items
+    .map((item) => item.parameter.trim())
+    .filter(Boolean)
+    .join("-");
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -45,36 +59,38 @@ export function ServiceCard({
   };
 
   return (
-    <Card
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        "relative py-2 transition-[filter,border-color,box-shadow]",
-        !cardColor && "bg-card",
-        !editMode && "cursor-pointer hover:brightness-95",
-        selected && !editMode && "border-4 border-green-500 shadow-sm",
-        !selected && "border",
-        isDragging && "opacity-60",
-      )}
-      onClick={() => {
-        if (!editMode) {
-          onToggleSelect();
-        }
-      }}
-    >
-      <CardContent className="flex items-start gap-1.5 px-2.5 py-0.5">
-        {editMode ? (
-            <div className=" flex flex-col shrink-0 items-center">
-              <button
+    <Tooltip delayDuration={1200}>
+      <TooltipTrigger asChild>
+        <Card
+          ref={setNodeRef}
+          style={style}
+          className={cn(
+            "relative py-2 transition-[filter,border-color,box-shadow]",
+            !cardColor && "bg-card",
+            !editMode && "cursor-pointer hover:brightness-95",
+            selected && !editMode && "border-4 border-green-500 shadow-sm",
+            !selected && "border",
+            isDragging && "opacity-60",
+          )}
+          onClick={() => {
+            if (!editMode) {
+              onToggleSelect();
+            }
+          }}
+        >
+          <CardContent className="flex items-start gap-1.5 px-2.5 py-0.5">
+            {editMode ? (
+              <div className="flex shrink-0 flex-col items-center">
+                <button
                   type="button"
                   className="mt-0.5 cursor-grab text-muted-foreground active:cursor-grabbing"
                   aria-label="Verschieben"
                   {...attributes}
                   {...listeners}
-              >
-                <GripVertical className="size-3.5"/>
-              </button>
-              <Button
+                >
+                  <GripVertical className="size-3.5" />
+                </button>
+                <Button
                   type="button"
                   variant="ghost"
                   size="icon"
@@ -84,10 +100,10 @@ export function ServiceCard({
                     onEdit();
                   }}
                   aria-label="Bearbeiten"
-              >
-                <Pencil className="size-3.5"/>
-              </Button>
-              <Button
+                >
+                  <Pencil className="size-3.5" />
+                </Button>
+                <Button
                   type="button"
                   variant="ghost"
                   size="icon"
@@ -97,20 +113,29 @@ export function ServiceCard({
                     onDelete();
                   }}
                   aria-label="Löschen"
-              >
-                <Trash2 className="size-3.5"/>
-              </Button>
-            </div>
-        ) : null}
-        <p
-          className={cn(
-            "min-w-0 flex-1 text-center text-xs font-medium leading-tight break-words whitespace-normal",
-            cardColor ? getContrastTextClass(cardColor) : "text-foreground",
-          )}
-        >
-          {service.title}
-        </p>
-      </CardContent>
-    </Card>
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </div>
+            ) : null}
+            <p
+              className={cn(
+                "min-w-0 flex-1 text-center text-xs font-medium leading-tight break-words whitespace-normal",
+                cardColor ? getContrastTextClass(cardColor) : "text-foreground",
+              )}
+            >
+              {service.title}
+            </p>
+          </CardContent>
+        </Card>
+      </TooltipTrigger>
+      <TooltipContent side="top" sideOffset={6} className="max-w-60 text-left">
+        <div className="flex flex-col gap-0.5">
+          <span>{goae ? `GOÄ: ${goae}` : "Keine GOÄ-Nummern"}</span>
+          {parameters ? <span>Parameter: {parameters}</span> : null}
+          {editMode ? <span>Preis: {formatPrice(service.price_cents)}</span> : null}
+        </div>
+      </TooltipContent>
+    </Tooltip>
   );
 }

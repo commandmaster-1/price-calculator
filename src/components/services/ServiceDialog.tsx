@@ -1,6 +1,7 @@
 import { useEffect, useState, type SubmitEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { ColorPickerField } from "@/components/services/ColorPickerField";
+import { GoaePickerField } from "@/components/services/GoaePickerField";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { formatPriceInput, parsePriceInput } from "@/lib/format-price";
 import { DEFAULT_COLOR_PRESETS } from "@/lib/color-utils";
 import { useColorPresets } from "@/hooks/useColorPresets";
+import type { GoaeItem } from "@/types/goae";
 import type { Service } from "@/types/service";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field.tsx";
 
@@ -19,12 +21,13 @@ interface ServiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   service?: Service | null;
+  goaeItems: GoaeItem[];
   onSubmit: (values: {
     title: string;
     price_cents: number;
     category: string;
     color: string;
-    goae: string;
+    goae_ids: number[];
   }) => Promise<void>;
 }
 
@@ -32,6 +35,7 @@ export function ServiceDialog({
   open,
   onOpenChange,
   service,
+  goaeItems,
   onSubmit,
 }: ServiceDialogProps) {
   const { presets, loading: presetsLoading, updatePreset } = useColorPresets();
@@ -39,7 +43,7 @@ export function ServiceDialog({
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
   const [color, setColor] = useState<string>(DEFAULT_COLOR_PRESETS[0]);
-  const [goae, setGoae] = useState("");
+  const [goaeIds, setGoaeIds] = useState<number[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,7 +53,7 @@ export function ServiceDialog({
       setPrice(service ? formatPriceInput(service.price_cents) : "");
       setCategory(service?.category ?? "");
       setColor(service?.color || DEFAULT_COLOR_PRESETS[0]);
-      setGoae(service?.goae || "");
+      setGoaeIds(service?.goae_items.map((item) => item.id) ?? []);
       setError(null);
     }
   }, [open, service]);
@@ -76,7 +80,9 @@ export function ServiceDialog({
         title: title.trim(),
         price_cents: priceCents,
         category: category.trim(),
-        goae: goae.trim(),
+        goae_ids: goaeItems
+          .filter((item) => goaeIds.includes(item.id))
+          .map((item) => item.id),
         color,
       });
       onOpenChange(false);
@@ -124,14 +130,11 @@ export function ServiceDialog({
                 placeholder="Optional, z. B. Planung"
               />
             </Field>
-            <Field>
-              <FieldLabel>GOÄ</FieldLabel>
-              <Input id="service-goae"
-                     value={goae}
-                     onChange={(event) => setGoae(event.target.value)}
-                     placeholder="GOÄ Code"
-              />
-            </Field>
+            <GoaePickerField
+              items={goaeItems}
+              selectedIds={goaeIds}
+              onChange={setGoaeIds}
+            />
           </FieldGroup>
           {presetsLoading ? (
             <p className="text-sm text-muted-foreground">Lade Farb-Presets…</p>

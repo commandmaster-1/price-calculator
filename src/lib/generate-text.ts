@@ -1,3 +1,4 @@
+import type { GoaeItem } from "@/types/goae";
 import type { Service } from "@/types/service";
 import { formatPrice } from "@/lib/format-price";
 
@@ -69,16 +70,51 @@ export function calculateTotalCents(
   }, 0);
 }
 
+export function collectGoaeItems(
+  services: Service[],
+  selectedIds: number[],
+): GoaeItem[] {
+  const serviceMap = new Map(services.map((service) => [service.id, service]));
+  const items: GoaeItem[] = [];
+
+  for (const id of selectedIds) {
+    const service = serviceMap.get(id);
+    if (!service) continue;
+    items.push(...service.goae_items);
+  }
+
+  return items;
+}
+
+function uniqueNonEmpty(values: string[]): string[] {
+  const seen = new Set<string>();
+  const unique: string[] = [];
+
+  for (const value of values) {
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    unique.push(value);
+  }
+
+  return unique;
+}
+
 export function formatGoaeText(
   services: Service[],
   selectedIds: number[],
 ): string {
-  const serviceMap = new Map(services.map((service) => [service.id, service]));
+  return uniqueNonEmpty(
+    collectGoaeItems(services, selectedIds).map((item) => item.number.trim()),
+  ).join("-");
+}
 
-  return selectedIds
-    .map((id) => serviceMap.get(id)?.goae.trim())
-    .filter((goae): goae is string => Boolean(goae))
-    .join("-");
+export function formatParameterText(
+  services: Service[],
+  selectedIds: number[],
+): string {
+  return uniqueNonEmpty(
+    collectGoaeItems(services, selectedIds).map((item) => item.parameter.trim()),
+  ).join("-");
 }
 
 function escapeHtml(text: string): string {
@@ -102,10 +138,14 @@ export function generateText(
 ): { html: string; plainText: string } {
   const servicesHtml = formatServicesHtml(services, selectedIds);
   const priceText = formatPrice(calculateTotalCents(services, selectedIds));
+  const goaText = formatGoaeText(services, selectedIds);
+  const parameterText = formatParameterText(services, selectedIds);
 
   const html = templateHtml
     .replaceAll("{services}", servicesHtml)
-    .replaceAll("{price}", escapeHtml(priceText));
+    .replaceAll("{price}", escapeHtml(priceText))
+    .replaceAll("{goa}", escapeHtml(goaText))
+    .replaceAll("{parameter}", escapeHtml(parameterText));
 
   const plainText = htmlToPlainText(html);
 

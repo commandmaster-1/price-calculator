@@ -4,6 +4,11 @@ import type {
   DatabaseStatus,
 } from "@/types/database";
 import type {
+  CreateGoaeItemInput,
+  GoaeItem,
+  UpdateGoaeItemInput,
+} from "@/types/goae";
+import type {
   CreateServiceInput,
   Service,
   UpdateServiceInput,
@@ -45,6 +50,22 @@ export function deleteService(id: number): Promise<void> {
 
 export function reorderServices(orderedIds: number[]): Promise<Service[]> {
   return invoke<Service[]>("reorder_services", { orderedIds });
+}
+
+export function listGoaeItems(): Promise<GoaeItem[]> {
+  return invoke<GoaeItem[]>("list_goae_items");
+}
+
+export function createGoaeItem(input: CreateGoaeItemInput): Promise<GoaeItem> {
+  return invoke<GoaeItem>("create_goae_item", { input });
+}
+
+export function updateGoaeItem(input: UpdateGoaeItemInput): Promise<GoaeItem> {
+  return invoke<GoaeItem>("update_goae_item", { input });
+}
+
+export function deleteGoaeItem(id: number): Promise<void> {
+  return invoke<void>("delete_goae_item", { id });
 }
 
 export function getTemplate(): Promise<string> {
