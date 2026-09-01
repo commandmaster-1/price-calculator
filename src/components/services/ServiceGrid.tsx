@@ -26,7 +26,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ServiceCard } from "@/components/services/ServiceCard";
 import { ServiceDialog } from "@/components/services/ServiceDialog";
 import type { GoaeItem } from "@/types/goae";
-import type { Service } from "@/types/service";
+import type { CreateServiceInput, Service } from "@/types/service";
 
 interface ServiceGridProps {
   services: Service[];
@@ -34,23 +34,8 @@ interface ServiceGridProps {
   selectedIds: number[];
   onToggleSelect: (id: number) => void;
   goaeItems: GoaeItem[];
-  onCreate: (values: {
-    title: string;
-    price_cents: number;
-    category: string;
-    color: string;
-    goae_ids: number[];
-  }) => Promise<void>;
-  onUpdate: (
-    id: number,
-    values: {
-      title: string;
-      price_cents: number;
-      category: string;
-      color: string;
-      goae_ids: number[];
-    },
-  ) => Promise<void>;
+  onCreate: (values: CreateServiceInput) => Promise<void>;
+  onUpdate: (id: number, values: CreateServiceInput) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
   onReorder: (orderedIds: number[]) => Promise<void>;
 }

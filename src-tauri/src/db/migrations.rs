@@ -79,7 +79,8 @@ mod tests {
         assert!(table_exists(&conn, "service_goae").unwrap());
         assert!(column_exists(&conn, "services", "color").unwrap());
         assert!(!column_exists(&conn, "services", "goae").unwrap());
-        assert_eq!(migration_count(&conn), 4);
+        assert!(column_exists(&conn, "goae_items", "price_cents").unwrap());
+        assert_eq!(migration_count(&conn), 5);
     }
 
     #[test]
@@ -121,7 +122,7 @@ mod tests {
         let conn = state.conn.lock().unwrap();
         assert!(table_exists(&conn, "goae_items").unwrap());
         assert!(!column_exists(&conn, "services", "goae").unwrap());
-        assert_eq!(migration_count(&conn), 4);
+        assert_eq!(migration_count(&conn), 5);
 
         let _ = std::fs::remove_file(path);
     }
@@ -159,7 +160,7 @@ mod tests {
         assert!(column_exists(&conn, "services", "color").unwrap());
         assert!(table_exists(&conn, "goae_items").unwrap());
         assert!(!column_exists(&conn, "services", "goae").unwrap());
-        assert_eq!(migration_count(&conn), 4);
+        assert_eq!(migration_count(&conn), 5);
 
         let _ = std::fs::remove_file(path);
     }
@@ -184,7 +185,7 @@ mod tests {
         let conn = state.conn.lock().unwrap();
         assert!(table_exists(&conn, "goae_items").unwrap());
         assert!(!column_exists(&conn, "services", "goae").unwrap());
-        assert_eq!(migration_count(&conn), 4);
+        assert_eq!(migration_count(&conn), 5);
 
         let _ = std::fs::remove_file(path);
     }
@@ -238,7 +239,7 @@ mod tests {
 
         let conn = state.conn.lock().unwrap();
         assert!(!column_exists(&conn, "services", "goae").unwrap());
-        assert_eq!(migration_count(&conn), 4);
+        assert_eq!(migration_count(&conn), 5);
 
         let _ = std::fs::remove_file(path);
     }

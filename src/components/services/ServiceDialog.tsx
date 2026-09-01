@@ -10,11 +10,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { formatPriceInput, parsePriceInput } from "@/lib/format-price";
 import { DEFAULT_COLOR_PRESETS } from "@/lib/color-utils";
 import { useColorPresets } from "@/hooks/useColorPresets";
 import type { GoaeItem } from "@/types/goae";
-import type { Service } from "@/types/service";
+import type { CreateServiceInput, Service } from "@/types/service";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field.tsx";
 
 interface ServiceDialogProps {
@@ -22,13 +21,7 @@ interface ServiceDialogProps {
   onOpenChange: (open: boolean) => void;
   service?: Service | null;
   goaeItems: GoaeItem[];
-  onSubmit: (values: {
-    title: string;
-    price_cents: number;
-    category: string;
-    color: string;
-    goae_ids: number[];
-  }) => Promise<void>;
+  onSubmit: (values: CreateServiceInput) => Promise<void>;
 }
 
 export function ServiceDialog({
@@ -40,7 +33,6 @@ export function ServiceDialog({
 }: ServiceDialogProps) {
   const { presets, loading: presetsLoading, updatePreset } = useColorPresets();
   const [title, setTitle] = useState("");
-  const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
   const [color, setColor] = useState<string>(DEFAULT_COLOR_PRESETS[0]);
   const [goaeIds, setGoaeIds] = useState<number[]>([]);
@@ -50,7 +42,6 @@ export function ServiceDialog({
   useEffect(() => {
     if (open) {
       setTitle(service?.title ?? "");
-      setPrice(service ? formatPriceInput(service.price_cents) : "");
       setCategory(service?.category ?? "");
       setColor(service?.color || DEFAULT_COLOR_PRESETS[0]);
       setGoaeIds(service?.goae_items.map((item) => item.id) ?? []);
@@ -60,15 +51,9 @@ export function ServiceDialog({
 
   async function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
-    const priceCents = parsePriceInput(price);
 
     if (!title.trim()) {
       setError("Bitte einen Titel eingeben.");
-      return;
-    }
-
-    if (priceCents === null) {
-      setError("Bitte einen gültigen Preis eingeben.");
       return;
     }
 
@@ -78,7 +63,6 @@ export function ServiceDialog({
     try {
       await onSubmit({
         title: title.trim(),
-        price_cents: priceCents,
         category: category.trim(),
         goae_ids: goaeItems
           .filter((item) => goaeIds.includes(item.id))
@@ -95,13 +79,13 @@ export function ServiceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {service ? "Dienstleistung bearbeiten" : "Neue Dienstleistung"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col space-y-4 overflow-y-auto">
           <FieldGroup>
             <Field>
               <FieldLabel>Titel</FieldLabel>
@@ -110,15 +94,6 @@ export function ServiceDialog({
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
                 placeholder="z. B. Beratung"
-              />
-            </Field>
-            <Field>
-              <FieldLabel>Preis (€)</FieldLabel>
-              <Input
-                id="service-price"
-                value={price}
-                onChange={(event) => setPrice(event.target.value)}
-                placeholder="z. B. 1,30"
               />
             </Field>
             <Field>
@@ -131,6 +106,7 @@ export function ServiceDialog({
               />
             </Field>
             <GoaePickerField
+              key={open ? "open" : "closed"}
               items={goaeItems}
               selectedIds={goaeIds}
               onChange={setGoaeIds}

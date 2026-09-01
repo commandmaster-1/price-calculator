@@ -15,7 +15,7 @@ const services: Service[] = [
     price_cents: 1000,
     category: "Kategorie1",
     color: "",
-    goae_items: [{ id: 10, number: "100", parameter: "Param1", sort_order: 0 }],
+    goae_items: [{ id: 10, number: "100", parameter: "Param1", price_cents: 1000, sort_order: 0 }],
     sort_order: 0,
   },
   {
@@ -24,7 +24,7 @@ const services: Service[] = [
     price_cents: 2000,
     category: "Kategorie1",
     color: "",
-    goae_items: [{ id: 20, number: "200", parameter: "Param2", sort_order: 0 }],
+    goae_items: [{ id: 20, number: "200", parameter: "Param2", price_cents: 2000, sort_order: 0 }],
     sort_order: 1,
   },
   {
@@ -43,8 +43,8 @@ const services: Service[] = [
     category: "Kategorie2",
     color: "",
     goae_items: [
-      { id: 40, number: "400", parameter: "Param4a", sort_order: 0 },
-      { id: 41, number: "401", parameter: "Param4b", sort_order: 1 },
+      { id: 40, number: "400", parameter: "Param4a", price_cents: 2500, sort_order: 0 },
+      { id: 41, number: "401", parameter: "Param4b", price_cents: 1500, sort_order: 1 },
     ],
     sort_order: 3,
   },
@@ -106,8 +106,8 @@ describe("formatGoaeText", () => {
         category: "Kategorie1",
         color: "",
         goae_items: [
-          { id: 10, number: "100", parameter: "Param1", sort_order: 0 },
-          { id: 60, number: "600", parameter: "Param6", sort_order: 1 },
+          { id: 10, number: "100", parameter: "Param1", price_cents: 1000, sort_order: 0 },
+          { id: 60, number: "600", parameter: "Param6", price_cents: 600, sort_order: 1 },
         ],
         sort_order: 5,
       },
@@ -128,8 +128,8 @@ describe("formatParameterText", () => {
       {
         ...services[0],
         goae_items: [
-          { id: 10, number: "100", parameter: "Param1", sort_order: 0 },
-          { id: 11, number: "101", parameter: "  ", sort_order: 1 },
+          { id: 10, number: "100", parameter: "Param1", price_cents: 1000, sort_order: 0 },
+          { id: 11, number: "101", parameter: "  ", price_cents: 0, sort_order: 1 },
         ],
       },
     ];
@@ -150,8 +150,8 @@ describe("formatParameterText", () => {
         category: "Kategorie1",
         color: "",
         goae_items: [
-          { id: 10, number: "100", parameter: "Param1", sort_order: 0 },
-          { id: 60, number: "600", parameter: "Param6", sort_order: 1 },
+          { id: 10, number: "100", parameter: "Param1", price_cents: 1000, sort_order: 0 },
+          { id: 60, number: "600", parameter: "Param6", price_cents: 600, sort_order: 1 },
         ],
         sort_order: 5,
       },
@@ -169,7 +169,12 @@ describe("formatServicesHtml", () => {
 });
 
 describe("calculateTotalCents", () => {
-  it("sums selected service prices", () => {
+  it("sums selected service prices from GOÄ items", () => {
     expect(calculateTotalCents(services, [1, 4])).toBe(5000);
+  });
+
+  it("ignores stored service prices when GOÄ items differ", () => {
+    const stale: Service[] = [{ ...services[0], price_cents: 9999 }];
+    expect(calculateTotalCents(stale, [1])).toBe(1000);
   });
 });

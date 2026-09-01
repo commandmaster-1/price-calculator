@@ -12,14 +12,21 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { formatPrice, formatPriceInput, parsePriceInput } from "@/lib/format-price";
 import type { GoaeItem } from "@/types/goae";
 
 interface GoaeManagerDialogProps {
   items: GoaeItem[];
   loading: boolean;
-  onCreate: (values: { number: string; parameter: string }) => Promise<void>;
-  onUpdate: (id: number, values: { number: string; parameter: string }) => Promise<void>;
+  onCreate: (values: {
+    number: string;
+    parameter: string;
+    price_cents: number;
+  }) => Promise<void>;
+  onUpdate: (
+    id: number,
+    values: { number: string; parameter: string; price_cents: number },
+  ) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
 }
 
@@ -33,27 +40,45 @@ export function GoaeManagerDialog({
   const [open, setOpen] = useState(false);
   const [number, setNumber] = useState("");
   const [parameter, setParameter] = useState("");
+  const [price, setPrice] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editNumber, setEditNumber] = useState("");
   const [editParameter, setEditParameter] = useState("");
+  const [editPrice, setEditPrice] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<GoaeItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  function parseRequiredPrice(value: string): number | null {
+    const parsed = parsePriceInput(value);
+    if (parsed === null) return null;
+    return parsed;
+  }
+
   async function handleCreate(event: SubmitEvent) {
     event.preventDefault();
+    const priceCents = parseRequiredPrice(price);
     if (!number.trim() || !parameter.trim()) {
       setError("Bitte Ziffer und Parameter eingeben.");
+      return;
+    }
+    if (priceCents === null) {
+      setError("Bitte einen gültigen Preis eingeben.");
       return;
     }
 
     setSubmitting(true);
     setError(null);
     try {
-      await onCreate({ number: number.trim(), parameter: parameter.trim() });
+      await onCreate({
+        number: number.trim(),
+        parameter: parameter.trim(),
+        price_cents: priceCents,
+      });
       setNumber("");
       setParameter("");
+      setPrice("");
     } catch (submitError) {
       setError(String(submitError));
     } finally {
@@ -65,12 +90,18 @@ export function GoaeManagerDialog({
     setEditingId(item.id);
     setEditNumber(item.number);
     setEditParameter(item.parameter);
+    setEditPrice(formatPriceInput(item.price_cents));
     setError(null);
   }
 
   async function handleUpdate(itemId: number) {
+    const priceCents = parseRequiredPrice(editPrice);
     if (!editNumber.trim() || !editParameter.trim()) {
       setError("Bitte Ziffer und Parameter eingeben.");
+      return;
+    }
+    if (priceCents === null) {
+      setError("Bitte einen gültigen Preis eingeben.");
       return;
     }
 
@@ -80,6 +111,7 @@ export function GoaeManagerDialog({
       await onUpdate(itemId, {
         number: editNumber.trim(),
         parameter: editParameter.trim(),
+        price_cents: priceCents,
       });
       setEditingId(null);
     } catch (submitError) {
@@ -113,19 +145,18 @@ export function GoaeManagerDialog({
             GOÄ-Ziffern
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>GOÄ-Ziffern verwalten</DialogTitle>
             <DialogDescription>
-              Legen Sie GOÄ-Ziffern zusammen mit einem Parameter an. Diese
-              Paare können anschließend bei den Dienstleistungen ausgewählt
-              werden.
+              Legen Sie GOÄ-Ziffern mit Parameter und Preis an. Der Preis einer
+              Dienstleistung ergibt sich aus den dort ausgewählten Ziffern.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreate} className="space-y-3">
             <FieldGroup className="gap-3">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_7rem_auto] sm:items-end">
                 <Field>
                   <FieldLabel htmlFor="goae-number">Ziffer</FieldLabel>
                   <Input
@@ -142,6 +173,15 @@ export function GoaeManagerDialog({
                     value={parameter}
                     onChange={(event) => setParameter(event.target.value)}
                     placeholder="z. B. Blutbild"
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="goae-price">Preis (€)</FieldLabel>
+                  <Input
+                    id="goae-price"
+                    value={price}
+                    onChange={(event) => setPrice(event.target.value)}
+                    placeholder="1,30"
                   />
                 </Field>
                 <Button type="submit" disabled={submitting}>
@@ -161,15 +201,15 @@ export function GoaeManagerDialog({
               Noch keine GOÄ-Ziffern vorhanden.
             </p>
           ) : (
-            <ScrollArea className="max-h-72">
-              <ul className="space-y-2 pr-3">
+            <div className="min-h-0 max-h-72 flex-1 overflow-y-auto">
+              <ul className="space-y-2 pr-1">
                 {items.map((item) => (
                   <li
                     key={item.id}
                     className="flex items-start gap-2 rounded-md border px-3 py-2"
                   >
                     {editingId === item.id ? (
-                      <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
+                      <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_7rem]">
                         <Input
                           value={editNumber}
                           onChange={(event) => setEditNumber(event.target.value)}
@@ -182,12 +222,19 @@ export function GoaeManagerDialog({
                           }
                           aria-label="Parameter"
                         />
+                        <Input
+                          value={editPrice}
+                          onChange={(event) => setEditPrice(event.target.value)}
+                          aria-label="Preis"
+                        />
                       </div>
                     ) : (
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium">{item.number}</p>
                         <p className="text-sm text-muted-foreground">
                           {item.parameter || "Kein Parameter"}
+                          {" · "}
+                          {formatPrice(item.price_cents)}
                         </p>
                       </div>
                     )}
@@ -238,7 +285,7 @@ export function GoaeManagerDialog({
                   </li>
                 ))}
               </ul>
-            </ScrollArea>
+            </div>
           )}
         </DialogContent>
       </Dialog>

@@ -5,6 +5,7 @@ pub struct GoaeItem {
     pub id: i64,
     pub number: String,
     pub parameter: String,
+    pub price_cents: i64,
     pub sort_order: i64,
 }
 
@@ -12,6 +13,7 @@ pub struct GoaeItem {
 pub struct CreateGoaeItemInput {
     pub number: String,
     pub parameter: String,
+    pub price_cents: i64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -19,6 +21,7 @@ pub struct UpdateGoaeItemInput {
     pub id: i64,
     pub number: String,
     pub parameter: String,
+    pub price_cents: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -35,7 +38,6 @@ pub struct Service {
 #[derive(Debug, Deserialize)]
 pub struct CreateServiceInput {
     pub title: String,
-    pub price_cents: i64,
     pub category: String,
     pub color: String,
     pub goae_ids: Vec<i64>,
@@ -45,7 +47,6 @@ pub struct CreateServiceInput {
 pub struct UpdateServiceInput {
     pub id: i64,
     pub title: String,
-    pub price_cents: i64,
     pub category: String,
     pub color: String,
     pub goae_ids: Vec<i64>,

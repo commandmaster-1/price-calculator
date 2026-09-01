@@ -59,6 +59,10 @@ export function formatServicesHtml(
     .join(", ");
 }
 
+export function goaeItemsPriceCents(items: GoaeItem[]): number {
+  return items.reduce((total, item) => total + item.price_cents, 0);
+}
+
 export function calculateTotalCents(
   services: Service[],
   selectedIds: number[],
@@ -66,7 +70,8 @@ export function calculateTotalCents(
   const serviceMap = new Map(services.map((service) => [service.id, service]));
   return selectedIds.reduce((total, id) => {
     const service = serviceMap.get(id);
-    return total + (service?.price_cents ?? 0);
+    if (!service) return total;
+    return total + goaeItemsPriceCents(service.goae_items);
   }, 0);
 }
 

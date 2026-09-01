@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/tooltip";
 import { getContrastTextClass, normalizeHexColor } from "@/lib/color-utils";
 import { formatPrice } from "@/lib/format-price";
+import { goaeItemsPriceCents } from "@/lib/generate-text";
 import { cn } from "@/lib/utils";
 import type { Service } from "@/types/service";
 
@@ -133,7 +134,9 @@ export function ServiceCard({
         <div className="flex flex-col gap-0.5">
           <span>{goae ? `GOÄ: ${goae}` : "Keine GOÄ-Ziffern"}</span>
           {parameters ? <span>Parameter: {parameters}</span> : null}
-          {editMode ? <span>Preis: {formatPrice(service.price_cents)}</span> : null}
+          {editMode ? (
+            <span>Preis: {formatPrice(goaeItemsPriceCents(service.goae_items))}</span>
+          ) : null}
         </div>
       </TooltipContent>
     </Tooltip>

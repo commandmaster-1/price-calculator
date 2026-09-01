@@ -12,7 +12,6 @@ export interface Service {
 
 export interface CreateServiceInput {
   title: string;
-  price_cents: number;
   category: string;
   color: string;
   goae_ids: number[];

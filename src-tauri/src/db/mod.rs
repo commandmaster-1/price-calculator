@@ -67,15 +67,20 @@ impl DbState {
             id: row.get(0)?,
             number: row.get(1)?,
             parameter: row.get(2)?,
-            sort_order: row.get(3)?,
+            price_cents: row.get(3)?,
+            sort_order: row.get(4)?,
         })
+    }
+
+    fn sum_goae_prices(items: &[GoaeItem]) -> i64 {
+        items.iter().map(|item| item.price_cents).sum()
     }
 
     fn load_goae_items_by_service(
         conn: &Connection,
     ) -> Result<HashMap<i64, Vec<GoaeItem>>, DbError> {
         let mut stmt = conn.prepare(
-            "SELECT sg.service_id, g.id, g.number, g.parameter, g.sort_order
+            "SELECT sg.service_id, g.id, g.number, g.parameter, g.price_cents, g.sort_order
              FROM service_goae sg
              JOIN goae_items g ON g.id = sg.goae_item_id
              ORDER BY sg.service_id ASC, sg.sort_order ASC, g.id ASC",
@@ -88,7 +93,8 @@ impl DbState {
                     id: row.get(1)?,
                     number: row.get(2)?,
                     parameter: row.get(3)?,
-                    sort_order: row.get(4)?,
+                    price_cents: row.get(4)?,
+                    sort_order: row.get(5)?,
                 },
             ))
         })?;
@@ -106,7 +112,7 @@ impl DbState {
         service_id: i64,
     ) -> Result<Vec<GoaeItem>, DbError> {
         let mut stmt = conn.prepare(
-            "SELECT g.id, g.number, g.parameter, g.sort_order
+            "SELECT g.id, g.number, g.parameter, g.price_cents, g.sort_order
              FROM service_goae sg
              JOIN goae_items g ON g.id = sg.goae_item_id
              WHERE sg.service_id = ?1
@@ -114,14 +120,7 @@ impl DbState {
         )?;
 
         let items = stmt
-            .query_map(params![service_id], |row| {
-                Ok(GoaeItem {
-                    id: row.get(0)?,
-                    number: row.get(1)?,
-                    parameter: row.get(2)?,
-                    sort_order: row.get(3)?,
-                })
-            })?
+            .query_map(params![service_id], Self::map_goae_item)?
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(items)
@@ -176,6 +175,7 @@ impl DbState {
         let mut items_by_service = Self::load_goae_items_by_service(&conn)?;
         for service in &mut services {
             service.goae_items = items_by_service.remove(&service.id).unwrap_or_default();
+            service.price_cents = Self::sum_goae_prices(&service.goae_items);
         }
 
         Ok(services)
@@ -184,7 +184,6 @@ impl DbState {
     pub fn create_service(
         &self,
         title: &str,
-        price_cents: i64,
         category: &str,
         color: &str,
         goae_ids: &[i64],
@@ -202,14 +201,19 @@ impl DbState {
         tx.execute(
             "INSERT INTO services (title, price_cents, category, color, sort_order)
              VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![title, price_cents, category, color, sort_order],
+            params![title, 0, category, color, sort_order],
         )?;
 
         let id = tx.last_insert_rowid();
         Self::replace_service_goae(&tx, id, &goae_ids)?;
+        let goae_items = Self::load_goae_items_for_service(&tx, id)?;
+        let price_cents = Self::sum_goae_prices(&goae_items);
+        tx.execute(
+            "UPDATE services SET price_cents = ?1 WHERE id = ?2",
+            params![price_cents, id],
+        )?;
         tx.commit()?;
 
-        let goae_items = Self::load_goae_items_for_service(&conn, id)?;
         Ok(Service {
             id,
             title: title.to_string(),
@@ -225,7 +229,6 @@ impl DbState {
         &self,
         id: i64,
         title: &str,
-        price_cents: i64,
         category: &str,
         color: &str,
         goae_ids: &[i64],
@@ -236,9 +239,9 @@ impl DbState {
 
         let rows = tx.execute(
             "UPDATE services
-             SET title = ?1, price_cents = ?2, category = ?3, color = ?4
-             WHERE id = ?5",
-            params![title, price_cents, category, color, id],
+             SET title = ?1, category = ?2, color = ?3
+             WHERE id = ?4",
+            params![title, category, color, id],
         )?;
 
         if rows == 0 {
@@ -246,17 +249,22 @@ impl DbState {
         }
 
         Self::replace_service_goae(&tx, id, &goae_ids)?;
+        let goae_items = Self::load_goae_items_for_service(&tx, id)?;
+        let price_cents = Self::sum_goae_prices(&goae_items);
+        tx.execute(
+            "UPDATE services SET price_cents = ?1 WHERE id = ?2",
+            params![price_cents, id],
+        )?;
         tx.commit()?;
 
-        let service = conn.query_row(
+        let mut service = conn.query_row(
             "SELECT id, title, price_cents, category, color, sort_order
              FROM services WHERE id = ?1",
             params![id],
             Self::map_service_row,
         )?;
-
-        let mut service = service;
-        service.goae_items = Self::load_goae_items_for_service(&conn, id)?;
+        service.goae_items = goae_items;
+        service.price_cents = price_cents;
         Ok(service)
     }
 
@@ -295,7 +303,7 @@ impl DbState {
     pub fn list_goae_items(&self) -> Result<Vec<GoaeItem>, DbError> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, number, parameter, sort_order
+            "SELECT id, number, parameter, price_cents, sort_order
              FROM goae_items
              ORDER BY sort_order ASC, id ASC",
         )?;
@@ -307,7 +315,12 @@ impl DbState {
         Ok(items)
     }
 
-    pub fn create_goae_item(&self, number: &str, parameter: &str) -> Result<GoaeItem, DbError> {
+    pub fn create_goae_item(
+        &self,
+        number: &str,
+        parameter: &str,
+        price_cents: i64,
+    ) -> Result<GoaeItem, DbError> {
         let conn = self.conn.lock().unwrap();
         let sort_order: i64 = conn.query_row(
             "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM goae_items",
@@ -316,9 +329,9 @@ impl DbState {
         )?;
 
         conn.execute(
-            "INSERT INTO goae_items (number, parameter, sort_order)
-             VALUES (?1, ?2, ?3)",
-            params![number, parameter, sort_order],
+            "INSERT INTO goae_items (number, parameter, price_cents, sort_order)
+             VALUES (?1, ?2, ?3, ?4)",
+            params![number, parameter, price_cents, sort_order],
         )?;
 
         let id = conn.last_insert_rowid();
@@ -326,6 +339,7 @@ impl DbState {
             id,
             number: number.to_string(),
             parameter: parameter.to_string(),
+            price_cents,
             sort_order,
         })
     }
@@ -335,13 +349,14 @@ impl DbState {
         id: i64,
         number: &str,
         parameter: &str,
+        price_cents: i64,
     ) -> Result<GoaeItem, DbError> {
         let conn = self.conn.lock().unwrap();
         let rows = conn.execute(
             "UPDATE goae_items
-             SET number = ?1, parameter = ?2
-             WHERE id = ?3",
-            params![number, parameter, id],
+             SET number = ?1, parameter = ?2, price_cents = ?3
+             WHERE id = ?4",
+            params![number, parameter, price_cents, id],
         )?;
 
         if rows == 0 {
@@ -349,7 +364,7 @@ impl DbState {
         }
 
         let item = conn.query_row(
-            "SELECT id, number, parameter, sort_order FROM goae_items WHERE id = ?1",
+            "SELECT id, number, parameter, price_cents, sort_order FROM goae_items WHERE id = ?1",
             params![id],
             Self::map_goae_item,
         )?;
@@ -414,24 +429,40 @@ mod tests {
     fn goae_items_can_be_attached_to_services() {
         let (state, path) = temp_db();
 
-        let item = state.create_goae_item("250", "Blutbild").unwrap();
+        let item = state.create_goae_item("250", "Blutbild", 130).unwrap();
         let service = state
-            .create_service("Labor", 1000, "Diagnostik", "#fff", &[item.id])
+            .create_service("Labor", "Diagnostik", "#fff", &[item.id])
             .unwrap();
 
         assert_eq!(service.goae_items.len(), 1);
         assert_eq!(service.goae_items[0].number, "250");
         assert_eq!(service.goae_items[0].parameter, "Blutbild");
+        assert_eq!(service.goae_items[0].price_cents, 130);
+        assert_eq!(service.price_cents, 130);
+
+        let second = state.create_goae_item("3550", "TSH", 200).unwrap();
+        let updated = state
+            .update_service(service.id, "Labor", "Diagnostik", "#fff", &[item.id, second.id])
+            .unwrap();
+        assert_eq!(updated.price_cents, 330);
 
         state
-            .update_goae_item(item.id, "250", "Kleines Blutbild")
+            .update_goae_item(item.id, "250", "Kleines Blutbild", 150)
             .unwrap();
         let services = state.list_services().unwrap();
         assert_eq!(services[0].goae_items[0].parameter, "Kleines Blutbild");
+        assert_eq!(services[0].price_cents, 350);
 
         state.delete_goae_item(item.id).unwrap();
         let services = state.list_services().unwrap();
+        assert_eq!(services[0].goae_items.len(), 1);
+        assert_eq!(services[0].goae_items[0].number, "3550");
+        assert_eq!(services[0].price_cents, 200);
+
+        state.delete_goae_item(second.id).unwrap();
+        let services = state.list_services().unwrap();
         assert!(services[0].goae_items.is_empty());
+        assert_eq!(services[0].price_cents, 0);
         assert!(state.list_goae_items().unwrap().is_empty());
 
         let _ = std::fs::remove_file(path);

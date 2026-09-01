@@ -31,8 +31,14 @@ pub fn create_goae_item(
     if parameter.is_empty() {
         return Err("Bitte einen Parameter eingeben.".to_string());
     }
+    if input.price_cents < 0 {
+        return Err("Preis darf nicht negativ sein.".to_string());
+    }
 
-    manager.with_db(|db| db.create_goae_item(number, parameter).map_err(map_db_error))
+    manager.with_db(|db| {
+        db.create_goae_item(number, parameter, input.price_cents)
+            .map_err(map_db_error)
+    })
 }
 
 #[tauri::command]
@@ -49,9 +55,12 @@ pub fn update_goae_item(
     if parameter.is_empty() {
         return Err("Bitte einen Parameter eingeben.".to_string());
     }
+    if input.price_cents < 0 {
+        return Err("Preis darf nicht negativ sein.".to_string());
+    }
 
     manager.with_db(|db| {
-        db.update_goae_item(input.id, number, parameter)
+        db.update_goae_item(input.id, number, parameter, input.price_cents)
             .map_err(map_db_error)
     })
 }

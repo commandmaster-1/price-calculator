@@ -16,14 +16,10 @@ pub fn create_service(
     if input.title.trim().is_empty() {
         return Err("Titel darf nicht leer sein.".to_string());
     }
-    if input.price_cents < 0 {
-        return Err("Preis darf nicht negativ sein.".to_string());
-    }
 
     manager.with_db(|db| {
         db.create_service(
             input.title.trim(),
-            input.price_cents,
             input.category.trim(),
             input.color.trim(),
             &input.goae_ids,
@@ -40,15 +36,11 @@ pub fn update_service(
     if input.title.trim().is_empty() {
         return Err("Titel darf nicht leer sein.".to_string());
     }
-    if input.price_cents < 0 {
-        return Err("Preis darf nicht negativ sein.".to_string());
-    }
 
     manager.with_db(|db| {
         db.update_service(
             input.id,
             input.title.trim(),
-            input.price_cents,
             input.category.trim(),
             input.color.trim(),
             &input.goae_ids,
